@@ -1,0 +1,16 @@
+# Dependencias
+node_modules/
+
+# Secretos: solo se versiona el ejemplo
+.env
+.env.*
+!.env.example
+
+# Resultados generados
+reports/
+*.log
+
+# Configuración local
+.claude/settings.local.json
+.DS_Store
+Thumbs.db
