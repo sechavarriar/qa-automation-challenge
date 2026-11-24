@@ -9,15 +9,14 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "cucumber-js",
-    "test:smoke": "cucumber-js --tags @smoke",
-    "test:regression": "cucumber-js --tags @regression",
-    "test:fakestore": "cucumber-js --tags @fakestore",
-    "test:gorest": "cucumber-js --tags @gorest"
+    "test": "node Utilities/Reporting/RunTests.mjs",
+    "test:smoke": "npm test -- --tags @smoke",
+    "test:regression": "npm test -- --tags @regression",
+    "test:fakestore": "npm test -- --tags @fakestore",
+    "test:gorest": "npm test -- --tags @gorest"
   },
   "devDependencies": {
     "@cucumber/cucumber": "^13.3.0",
-    "@faker-js/faker": "^10.6.0",
     "@types/node": "^26.6.7",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
