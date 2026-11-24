@@ -44,8 +44,9 @@ export class ApiWorld extends World {
     return client;
   }
 
+  /** Se adjunta como texto plano: el reporte HTML no interpreta el tipo que usa `log()`. */
   private logExchange(exchange: HttpExchange): void {
-    this.log(formatExchange(exchange));
+    this.attach(formatExchange(exchange), 'text/plain');
   }
 }
 

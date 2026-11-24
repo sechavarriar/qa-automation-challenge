@@ -32,14 +32,10 @@ if (existsSync(`${JSON_FOLDER}/cucumber.json`)) {
     displayDuration: true,
     hideMetadata: true,
     customData: {
-      title: 'Ejecución',
-      data: [
-        { label: 'Ambiente', value: process.env.TEST_ENV || 'qa' },
-        { label: 'Argumentos', value: process.argv.slice(2).join(' ') || '(suite completa)' },
-        { label: 'Commit', value: process.env.GITHUB_SHA ?? 'local' },
-        { label: 'Build', value: process.env.GITHUB_RUN_NUMBER ?? 'local' },
-        { label: 'Fecha', value: new Date().toISOString() },
-      ],
+      ambiente: process.env.TEST_ENV || 'qa',
+      argumentos: process.argv.slice(2).join(' ') || '(suite completa)',
+      commit: process.env.GITHUB_SHA?.slice(0, 7) ?? 'local',
+      build: process.env.GITHUB_RUN_NUMBER ?? 'local',
     },
   });
   console.log(`Reporte HTML: ${HTML_FOLDER}/index.html`);
