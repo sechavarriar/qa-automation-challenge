@@ -54,7 +54,7 @@ Completa `GOREST_TOKEN` en `.env` con un token de GoRest **que tenga permiso de 
 | `npm run perf:load` / `perf:stress` / `perf:spike` | Performance |
 | `npm run typecheck` | Verificación de tipos |
 
-El reporte queda en `reports/html/index.html`, con el request y el response de cada petición y los datos sensibles enmascarados. Se genera aunque haya fallos.
+El reporte queda en `reports/html/index.html` y un resumen legible de los fallos, en `reports/fallos.md`, con el request y el response de cada petición y los datos sensibles enmascarados. Se generan aunque haya fallos.
 
 ## Decisiones técnicas
 
@@ -583,6 +583,6 @@ Flujo: diseñar → **aprobación humana** → escribir → revisar → ejecutar
 | Casos diseñados con la skill | 55 (Carts, Users y Auth), aprobados por una persona |
 | Hallazgos de la revisión | 16: 3 altos, 7 medios y 6 bajos. 15 corregidos |
 | Errores de la IA detectados | Un filtro de fechas que no podía fallar, un mensaje de error que aceptaba `{}`, una ejecución sin escenarios en verde y logs ilegibles en el reporte |
-| Sin probar | `triage-fallos` |
+| Prueba de `triage-fallos` | 31 fallos: 27 reales y 4 sembrados sin avisarle. Clasificó bien los 4 sembrados y los 27 reales, y descubrió que el insumo mezclaba ejecuciones ([detalle](docs/ai-testing/triage.md)) |
 
-La revisión usó las instrucciones del agente `revisor-tests` en un agente sin herramientas de edición, porque la sesión había empezado antes de crearlo.
+La revisión y el triage usaron las instrucciones de cada agente en uno sin herramientas de edición, porque la sesión había empezado antes de crearlos. Es una sola prueba de cada uno: sirve para ver que funcionan, no para medir su precisión.
