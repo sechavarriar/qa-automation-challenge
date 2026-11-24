@@ -36,7 +36,9 @@ node performance/analyze.mjs load-test-products
 
 Cada ejecución escribe en `performance/output/`, que no se versiona.
 
-**En GitHub Actions, k6 no puede medir FakeStoreAPI.** La [ejecución del 24-11-2026](https://github.com/sechavarriar/qa-automation-challenge/actions/runs/45501301260) recibió 403 en las 4445 peticiones, desde la primera, así que no depende de la carga. En la misma franja, Cucumber recibió 200 desde Actions y k6 recibe 200 en local: el bloqueo ocurre con k6 desde la red de los runners. No se altera la identidad de k6 para evitarlo. Las pruebas de FakeStoreAPI verifican primero el acceso y, si no hay 200, se detienen con error. Los resultados válidos son los locales.
+**En GitHub Actions, k6 no puede medir FakeStoreAPI.** La [ejecución del 24-11-2026](https://github.com/sechavarriar/qa-automation-challenge/actions/runs/45501301260) recibió 403 en las 4445 peticiones, desde la primera, así que no depende de la carga. En la misma franja, Cucumber recibió 200 desde Actions y k6 recibe 200 en local: el bloqueo ocurre con k6 desde la red de los runners. La causa está confirmada en [otra ejecución](https://github.com/sechavarriar/qa-automation-challenge/actions/runs/45502783617): la respuesta trae `server=cloudflare` y `cf-mitigated=challenge`, es decir, un desafío antibots de Cloudflare que exige un navegador. No lo rechaza la API.
+
+No se altera la identidad de k6 para evitar ese control. Las pruebas de FakeStoreAPI verifican primero el acceso y, si no hay 200, se detienen con error y muestran quién rechazó la petición. Los resultados válidos son los locales.
 
 Esa misma ejecución muestra por qué el P95 no basta por sí solo: marcó 44 ms, «cumple», con el 100% de errores.
 
@@ -78,3 +80,15 @@ Esa misma ejecución muestra por qué el P95 no basta por sí solo: marcó 44 ms
 | Recuperación | 10 | 195 ms | < 500 ms | ✅ |
 
 3346 peticiones y 0% de errores. El P95 sube a 393 ms en los primeros 10 s del spike y vuelve al nivel base en la ventana siguiente.
+
+### Análisis: ¿cómo integrar estas pruebas en CI/CD?
+
+**Lo que ya está:** [performance-tests.yml](.github/workflows/performance-tests.yml) se lanza a mano (`load`, `stress`, `spike` o `all`) y los domingos ejecuta solo la carga. Los umbrales definen el resultado y los artefactos se guardan 30 días. El estrés no se programa porque supera a propósito el límite de GoRest.
+
+**Lo que aprendí al ejecutarlo:** un runner compartido no sirve para medir una API protegida. Cloudflare desafió a k6 y la prueba falló sin medir nada. En un proyecto real haría lo siguiente:
+
+1. **Generador de carga propio**, con IP fija autorizada en el filtro y en un repositorio privado. Un runner propio en un repo público permitiría que un tercero intentara ejecutar código en él.
+2. **Ambiente dedicado**, parecido a producción y sin otro tráfico, para que una variación se deba al cambio y no al entorno.
+3. **Tres niveles:** una carga corta en cada PR, la carga completa cada noche y estrés o spike antes de un release o a mano.
+4. **Verificación previa de acceso**, como la de este repo, para distinguir "no se pudo medir" de "el sistema es lento".
+5. **Umbrales y alertas:** primero se comparan con una línea base sin bloquear; cuando el resultado es estable, un umbral incumplido detiene el despliegue y avisa al equipo.
