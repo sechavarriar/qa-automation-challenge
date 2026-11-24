@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "required": ["id", "name", "email", "gender", "status"],
+  "properties": {
+    "id": { "type": "integer", "minimum": 1 },
+    "name": { "type": "string", "minLength": 1 },
+    "email": { "type": "string", "format": "email" },
+    "gender": { "enum": ["male", "female"] },
+    "status": { "enum": ["active", "inactive"] }
+  }
+}

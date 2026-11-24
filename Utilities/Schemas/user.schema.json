@@ -1,0 +1,37 @@
+{
+  "type": "object",
+  "required": ["id", "email", "username", "password", "name", "address", "phone"],
+  "properties": {
+    "id": { "type": "integer", "minimum": 1 },
+    "email": { "type": "string", "format": "email" },
+    "username": { "type": "string", "minLength": 1 },
+    "password": { "type": "string", "minLength": 1 },
+    "name": {
+      "type": "object",
+      "required": ["firstname", "lastname"],
+      "properties": {
+        "firstname": { "type": "string", "minLength": 1 },
+        "lastname": { "type": "string", "minLength": 1 }
+      }
+    },
+    "address": {
+      "type": "object",
+      "required": ["city", "street", "number", "zipcode", "geolocation"],
+      "properties": {
+        "city": { "type": "string", "minLength": 1 },
+        "street": { "type": "string", "minLength": 1 },
+        "number": { "type": "number", "minimum": 0 },
+        "zipcode": { "type": "string", "minLength": 1 },
+        "geolocation": {
+          "type": "object",
+          "required": ["lat", "long"],
+          "properties": {
+            "lat": { "type": "string", "minLength": 1 },
+            "long": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "phone": { "type": "string", "minLength": 1 }
+  }
+}

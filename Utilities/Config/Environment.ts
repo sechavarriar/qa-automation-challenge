@@ -1,6 +1,7 @@
 import { config as loadEnvFile } from 'dotenv';
 
-loadEnvFile({ quiet: true });
+// `.env.<ambiente>` tiene prioridad sobre `.env`; las variables del sistema, sobre ambos.
+loadEnvFile({ path: [`.env.${process.env.TEST_ENV?.trim() || 'qa'}`, '.env'], quiet: true });
 
 const ENVIRONMENTS = ['dev', 'qa', 'staging', 'prod'] as const;
 type EnvironmentName = (typeof ENVIRONMENTS)[number];
@@ -34,8 +35,9 @@ function environmentName(): EnvironmentName {
 
 /** Los valores se leen al usarse: FakeStoreAPI se puede probar sin token de GoRest. */
 export const Environment = {
-  get name(): EnvironmentName {
-    return environmentName();
+  /** Falla al arrancar si el ambiente indicado no existe. */
+  validate(): void {
+    environmentName();
   },
   get fakeStoreBaseUrl(): string {
     return required('FAKESTORE_BASE_URL');

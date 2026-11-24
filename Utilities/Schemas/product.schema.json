@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "required": ["id", "title", "price", "description", "category", "image"],
+  "properties": {
+    "id": { "type": "integer", "minimum": 1 },
+    "title": { "type": "string", "minLength": 1 },
+    "price": { "type": "number", "minimum": 0 },
+    "description": { "type": "string", "minLength": 1 },
+    "category": { "type": "string", "minLength": 1 },
+    "image": { "type": "string", "format": "uri" }
+  }
+}

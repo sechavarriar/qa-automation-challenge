@@ -30,7 +30,7 @@ Si dos fuentes se contradicen, se deja por escrito y decide el usuario.
 | `Features/` | Gherkin y todos los datos de prueba | Detalles técnicos (URL, cabeceras de bajo nivel) |
 | `StepsDefinitions/` | Traducción de step a llamada, y asserts | URLs, `fetch`, construcción de peticiones |
 | `PageObject/Api/` | Endpoints y operaciones de un recurso | Asserts, datos de prueba |
-| `Utilities/` | Cliente HTTP, configuración, logging, esquemas, helpers | Conocimiento de un recurso concreto |
+| `Utilities/` | Cliente HTTP, configuración, logging, esquemas, helpers | Conocimiento de un recurso concreto, salvo `Support/ApiWorld.ts`, que es el punto donde se arman los API Objects |
 
 - El runner es Cucumber. Playwright se usa solo como cliente HTTP con `request.newContext()`.
 - No se usa `@playwright/test` ni su HTML Reporter. El cliente se importa del paquete `playwright`.
@@ -89,6 +89,10 @@ Decisiones ya tomadas:
 | GET de nuevo tras un DELETE en FakeStoreAPI | 200 con el recurso; la documentación dice que nada se borra | `CONTRATO` |
 | Login correcto en FakeStoreAPI | 200 | `CONTRATO` |
 | POST con body inválido en FakeStoreAPI | 400 y mensaje de error | `ENUNCIADO` + `CONTRATO` |
+| Login con credenciales incorrectas en FakeStoreAPI | 401 | `HTTP` |
+| Elementos de `products` en un carrito | `{productId, quantity}`, según el README oficial | `CONTRATO` |
+| PATCH en FakeStoreAPI devuelve el `id` | Sí, por analogía con el README de products | `SUPUESTO` aprobado |
+| Body de DELETE en FakeStoreAPI | El recurso eliminado ("Response coherente") | `SUPUESTO` aprobado |
 
 ## 8. Seguridad
 
