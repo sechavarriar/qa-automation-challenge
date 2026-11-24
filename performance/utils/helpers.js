@@ -13,10 +13,28 @@ export function requiredEnv(name) {
 
 /** Corta la prueba si el destino no responde 200: cargar contra un bloqueo no mide nada. */
 export function abortIfUnreachable(url) {
-  const { status } = http.get(url);
-  if (status !== 200) {
-    exec.test.abort(`La prueba no se ejecutó: ${url} respondió ${status} en la verificación previa.`);
+  const response = http.get(url);
+  if (response.status !== 200) {
+    exec.test.abort(
+      `La prueba no se ejecutó: ${url} respondió ${response.status} en la verificación previa. ` +
+        describeBlock(response),
+    );
   }
+}
+
+/** Pistas para saber quién rechazó la petición: la API o un filtro delante de ella. */
+function describeBlock({ headers, body, error }) {
+  const text = (body || error || '')
+    .replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return [
+    `server=${headers['Server'] || '-'}`,
+    `cf-mitigated=${headers['Cf-Mitigated'] || '-'}`,
+    `content-type=${headers['Content-Type'] || '-'}`,
+    `respuesta=${text.slice(0, 200) || '(vacía)'}`,
+  ].join(' | ');
 }
 
 /** Nombre de la fase según el tiempo transcurrido. `phases`: [{ name, until }], en segundos. */
