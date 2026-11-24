@@ -1,0 +1,71 @@
+name: API Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    - cron: '0 6 * * *' # Regresión diaria, 6 AM UTC
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: 'Expresión de tags de Cucumber'
+        type: string
+        default: '@regression'
+      environment:
+        description: 'Ambiente'
+        type: choice
+        options: [dev, qa, staging, prod]
+        default: qa
+      parallel:
+        description: 'Procesos en paralelo'
+        type: choice
+        options: ['1', '2', '4']
+        default: '2'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: api-tests-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  api-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # En PR solo smoke; en push y nightly, regresión; a mano, lo que se pida.
+      TAGS: ${{ inputs.tags || (github.event_name == 'pull_request' && '@smoke') || '@regression' }}
+      PARALLEL: ${{ inputs.parallel || '2' }}
+      TEST_ENV: ${{ inputs.environment || 'qa' }}
+      FAKESTORE_BASE_URL: ${{ vars.FAKESTORE_BASE_URL || 'https://fakestoreapi.com' }}
+      GOREST_BASE_URL: ${{ vars.GOREST_BASE_URL || 'https://gorest.co.in' }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Verificar tipos
+        run: npm run typecheck
+
+      - name: Ejecutar pruebas
+        env:
+          GOREST_TOKEN: ${{ secrets.GOREST_TOKEN }}
+        run: npm test -- --tags "$TAGS" --parallel "$PARALLEL"
+
+      - name: Publicar reporte
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: cucumber-report-${{ github.run_number }}-${{ github.run_attempt }}
+          path: reports/
+          if-no-files-found: warn
+          retention-days: 30
