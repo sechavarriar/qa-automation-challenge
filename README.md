@@ -578,6 +578,27 @@ Supuesto: hoy no hay smoke en PR, porque la cobertura automatizada es ~5%. La co
 
 Flujo: diseñar → **aprobación humana** → escribir → revisar → ejecutar → triage → **decisión humana**. Las reglas están en [reglas-qa.md](.claude/reglas-qa.md); la principal es que la IA no puede cambiar un valor esperado para que un test pase.
 
+### Cómo se usa
+
+Requiere [Claude Code](https://claude.com/claude-code) abierto en la carpeta del proyecto. Es opcional.
+
+| Paso | Qué se escribe | Entra | Sale |
+|---|---|---|---|
+| 1. Diseñar | `/disenar-casos orders` | Enunciado y contrato | `docs/test-design/orders.md` |
+| 2. Aprobar | La persona cambia `propuesto` por `aprobado` | Matriz | Matriz aprobada |
+| 3. Escribir | `/escribir-tests orders` | Matriz aprobada | Feature, steps, API Object y esquema |
+| 4. Revisar | "Usa el agente revisor-tests" | Código y matriz | Hallazgos por gravedad |
+| 5. Ejecutar | `npm test` | Suite | `reports/fallos.md` y reporte HTML |
+| 6. Triage | "Usa el agente triage-fallos" | `reports/fallos.md` | Clasificación y primera verificación |
+
+`orders` es un ejemplo de recurso nuevo. Antes de diseñarlo hay que agregar su contrato en la sección 7 de [reglas-qa.md](.claude/reglas-qa.md).
+
+### Alcance
+
+Claude Code también ayudó a escribir el código, los scripts de k6 y este README. Las decisiones y los valores esperados los aprobé yo.
+
+### Resultados
+
 | Dato | Resultado |
 |---|---|
 | Casos diseñados con la skill | 55 (Carts, Users y Auth), aprobados por una persona |
