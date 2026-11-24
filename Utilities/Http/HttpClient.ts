@@ -15,8 +15,9 @@ export interface HttpClientOptions {
 
 type Outcome = Pick<HttpExchange, 'response' | 'error'>;
 
-const MAX_GET_ATTEMPTS = 3;
+export const MAX_GET_ATTEMPTS = 3;
 const BACKOFF_MS = 500;
+const NETWORK_ERROR = /ECONN|ENOTFOUND|EAI_AGAIN|ETIMEDOUT|EPIPE|ENETUNREACH|EHOSTUNREACH|socket|timeout|timed out/i;
 
 export class HttpClient {
   private constructor(
@@ -76,7 +77,9 @@ export class HttpClient {
         },
       };
     } catch (error) {
-      return { error: describeError(error) };
+      const description = describeError(error);
+      if (!NETWORK_ERROR.test(description)) throw new Error(description);
+      return { error: description };
     }
   }
 

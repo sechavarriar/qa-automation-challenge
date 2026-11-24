@@ -1,0 +1,20 @@
+{
+  "type": "object",
+  "required": ["id", "userId", "date", "products"],
+  "properties": {
+    "id": { "type": "integer", "minimum": 1 },
+    "userId": { "type": "integer", "minimum": 1 },
+    "date": { "type": "string", "format": "date-time" },
+    "products": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["productId", "quantity"],
+        "properties": {
+          "productId": { "type": "integer", "minimum": 1 },
+          "quantity": { "type": "number", "minimum": 0 }
+        }
+      }
+    }
+  }
+}

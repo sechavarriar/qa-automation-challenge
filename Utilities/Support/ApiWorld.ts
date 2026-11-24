@@ -1,5 +1,6 @@
 import { setWorldConstructor, World } from '@cucumber/cucumber';
-import { FakeStoreApi } from '../../PageObject/Api/FakeStore/FakeStoreApi';
+import type { CrudApi } from '../../PageObject/Api/CrudApi';
+import { FakeStoreApi, type FakeStoreResource } from '../../PageObject/Api/FakeStore/FakeStoreApi';
 import { Environment } from '../Config/Environment';
 import type { ApiResponse } from '../Http/ApiResponse';
 import { HttpClient } from '../Http/HttpClient';
@@ -18,6 +19,10 @@ export class ApiWorld extends World {
   async fakeStore(): Promise<FakeStoreApi> {
     this.fakeStoreApi ??= new FakeStoreApi(await this.openClient(Environment.fakeStoreBaseUrl));
     return this.fakeStoreApi;
+  }
+
+  async fakeStoreResource(name: FakeStoreResource): Promise<CrudApi> {
+    return (await this.fakeStore()).resource(name);
   }
 
   get response(): ApiResponse {

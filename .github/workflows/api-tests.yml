@@ -40,8 +40,9 @@ jobs:
       TAGS: ${{ inputs.tags || (github.event_name == 'pull_request' && '@smoke') || '@regression' }}
       PARALLEL: ${{ inputs.parallel || '2' }}
       TEST_ENV: ${{ inputs.environment || 'qa' }}
-      FAKESTORE_BASE_URL: ${{ vars.FAKESTORE_BASE_URL || 'https://fakestoreapi.com' }}
-      GOREST_BASE_URL: ${{ vars.GOREST_BASE_URL || 'https://gorest.co.in' }}
+      # URL propia por ambiente con variables del repo, ej. FAKESTORE_BASE_URL_STAGING.
+      FAKESTORE_BASE_URL: ${{ vars[format('FAKESTORE_BASE_URL_{0}', inputs.environment || 'qa')] || 'https://fakestoreapi.com' }}
+      GOREST_BASE_URL: ${{ vars[format('GOREST_BASE_URL_{0}', inputs.environment || 'qa')] || 'https://gorest.co.in' }}
     steps:
       - uses: actions/checkout@v7
 

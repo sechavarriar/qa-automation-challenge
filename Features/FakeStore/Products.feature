@@ -81,14 +81,14 @@ Feature: FakeStoreAPI - Products
 
     @defecto-FS-01
     Examples: id inexistente
-      | caso   | descripcion     | id   | status | fuente   |
-      | PRD-11 | inexistente     | 9999 | 404    | HTTP     |
-      | PRD-12 | límite inferior | 0    | 404    | HTTP     |
+      | caso   | descripcion     | id   | status | fuente |
+      | PRD-11 | inexistente     | 9999 | 404    | HTTP   |
+      | PRD-12 | límite inferior | 0    | 404    | HTTP   |
 
     @defecto-FS-02
     Examples: id no numérico
-      | caso   | descripcion     | id   | status | fuente   |
-      | PRD-13 | no numérico     | abc  | 400    | CONTRATO |
+      | caso   | descripcion | id  | status | fuente   |
+      | PRD-13 | no numérico | abc | 400    | CONTRATO |
 
   @smoke
   Scenario Outline: [<caso>] Crear el producto "<title>" (fuente: <fuente>)
@@ -123,13 +123,13 @@ Feature: FakeStoreAPI - Products
 
     @defecto-FS-03
     Examples: body que incumple el contrato
-      | caso   | descripcion              | body                                                                                                                           | status | fuente    |
-      | PRD-16 | sin campos               | {}                                                                                                                             | 400    | ENUNCIADO |
+      | caso   | descripcion               | body                                                                                                                          | status | fuente    |
+      | PRD-16 | sin campos                | {}                                                                                                                            | 400    | ENUNCIADO |
       | PRD-17 | price con tipo incorrecto | {"title":"Teclado","price":"caro","description":"Teclado","category":"electronics","image":"https://example.com/teclado.png"} | 400    | CONTRATO  |
 
     Examples:
-      | caso   | descripcion              | body                                                                                                                           | status | fuente    |
-      | PRD-18 | JSON mal formado         | {"title":                                                                                                                      | 400    | ENUNCIADO |
+      | caso   | descripcion      | body      | status | fuente    |
+      | PRD-18 | JSON mal formado | {"title": | 400    | ENUNCIADO |
 
   Scenario Outline: [<caso>] Actualizar con <metodo> el producto <id> (fuente: <fuente>)
     When actualizo con <metodo> en products el id "<id>" con el body:
@@ -143,9 +143,9 @@ Feature: FakeStoreAPI - Products
     And lo recibido coincide con lo enviado
 
     Examples:
-      | caso   | metodo | id | body                                                                                                                                       | status | content_type     | contrato          | fuente    |
+      | caso   | metodo | id | body                                                                                                                              | status | content_type     | contrato          | fuente    |
       | PRD-19 | PUT    | 7  | {"title":"Teclado {unico}","price":99.9,"description":"Nuevo","category":"electronics","image":"https://example.com/teclado.png"} | 200    | application/json | product           | ENUNCIADO |
-      | PRD-20 | PATCH  | 8  | {"price":15.75}                                                                                                                            | 200    | application/json | identified-record | ENUNCIADO |
+      | PRD-20 | PATCH  | 8  | {"price":15.75}                                                                                                                   | 200    | application/json | identified-record | ENUNCIADO |
 
   @negativo
   Scenario Outline: [<caso>] Actualizar con <metodo> un producto con id <descripcion> (fuente: <fuente>)
@@ -157,13 +157,13 @@ Feature: FakeStoreAPI - Products
 
     @defecto-FS-04
     Examples: id inexistente
-      | caso   | metodo | descripcion | id   | body               | status | fuente   |
-      | PRD-21 | PUT    | inexistente | 9999 | {"title":"Teclado"} | 404    | HTTP     |
-      | PRD-22 | PATCH  | inexistente | 9999 | {"title":"Teclado"} | 404    | HTTP     |
+      | caso   | metodo | descripcion | id   | body                                                                                                                      | status | fuente |
+      | PRD-21 | PUT    | inexistente | 9999 | {"title":"Teclado","price":99.9,"description":"Nuevo","category":"electronics","image":"https://example.com/teclado.png"} | 404    | HTTP   |
+      | PRD-22 | PATCH  | inexistente | 9999 | {"title":"Teclado"}                                                                                                       | 404    | HTTP   |
 
     Examples:
-      | caso   | metodo | descripcion | id   | body               | status | fuente   |
-      | PRD-23 | PUT    | no numérico | abc  | {"title":"Teclado"} | 400    | CONTRATO |
+      | caso   | metodo | descripcion | id  | body                                                                                                                      | status | fuente   |
+      | PRD-23 | PUT    | no numérico | abc | {"title":"Teclado","price":99.9,"description":"Nuevo","category":"electronics","image":"https://example.com/teclado.png"} | 400    | CONTRATO |
 
   Scenario Outline: [<caso>] Eliminar el producto <id> y consultarlo de nuevo (fuente: <fuente>)
     # La documentación oficial indica que nada se borra de la base de datos.
@@ -174,6 +174,7 @@ Feature: FakeStoreAPI - Products
     And el id recibido es <id>
     When consulto en products el id "<id>"
     Then el status es <status_consulta>
+    And el header "Content-Type" contiene "<content_type>"
     And el body cumple el contrato "<contrato>"
     And el id recibido es <id>
 
@@ -188,9 +189,9 @@ Feature: FakeStoreAPI - Products
 
     @defecto-FS-05
     Examples: id inexistente
-      | caso   | descripcion | id   | status | fuente   |
-      | PRD-25 | inexistente | 9999 | 404    | HTTP     |
+      | caso   | descripcion | id   | status | fuente |
+      | PRD-25 | inexistente | 9999 | 404    | HTTP   |
 
     Examples:
-      | caso   | descripcion | id   | status | fuente   |
-      | PRD-26 | no numérico | abc  | 400    | CONTRATO |
+      | caso   | descripcion | id  | status | fuente   |
+      | PRD-26 | no numérico | abc | 400    | CONTRATO |

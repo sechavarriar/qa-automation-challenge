@@ -1,3 +1,5 @@
+import { maskText } from '../Logging/Masking';
+
 /** Respuesta ya leída. El cuerpo se guarda como texto para poder consultarlo varias veces. */
 export class ApiResponse {
   constructor(
@@ -14,7 +16,7 @@ export class ApiResponse {
     try {
       return JSON.parse(this.rawBody);
     } catch {
-      const received = this.rawBody === '' ? '(vacío)' : this.rawBody.slice(0, 200);
+      const received = this.rawBody === '' ? '(vacío)' : maskText(this.rawBody).slice(0, 200);
       throw new Error(`Se esperaba un body JSON válido. Recibido: ${received}`);
     }
   }
