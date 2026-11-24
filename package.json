@@ -13,7 +13,11 @@
     "test:smoke": "npm test -- --tags @smoke",
     "test:regression": "npm test -- --tags @regression",
     "test:fakestore": "npm test -- --tags @fakestore",
-    "test:gorest": "npm test -- --tags @gorest"
+    "test:gorest": "npm test -- --tags @gorest",
+    "perf:load": "node performance/run.mjs load",
+    "perf:stress": "node performance/run.mjs stress",
+    "perf:spike": "node performance/run.mjs spike",
+    "perf:all": "node performance/run.mjs all"
   },
   "devDependencies": {
     "@cucumber/cucumber": "^13.3.0",
