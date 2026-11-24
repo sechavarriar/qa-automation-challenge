@@ -1,0 +1,65 @@
+name: Performance Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Tipo de prueba'
+        required: true
+        type: choice
+        options:
+          - load
+          - stress
+          - spike
+          - all
+  schedule:
+    - cron: '0 2 * * 0' # Domingos 2 AM UTC
+
+permissions:
+  contents: read
+
+# Dos ejecuciones a la vez competirían por el mismo límite y ensuciarían los resultados.
+concurrency:
+  group: performance-tests
+
+jobs:
+  performance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # La ejecución programada solo hace carga: el estrés supera el límite de GoRest y se lanza a mano.
+      TEST_TYPE: ${{ inputs.test_type || 'load' }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Instalar k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Ejecutar pruebas de performance
+        env:
+          GOREST_TOKEN: ${{ secrets.GOREST_TOKEN }}
+        run: node performance/run.mjs "$TEST_TYPE" --quiet
+
+      - name: Analizar resultados por ventana de tiempo
+        if: always()
+        run: |
+          for raw in performance/results/raw/*.json; do
+            [ -e "$raw" ] && node performance/analyze.mjs "$(basename "$raw" .json)"
+          done
+
+      - name: Publicar resultados
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: performance-${{ env.TEST_TYPE }}-${{ github.run_number }}-${{ github.run_attempt }}
+          path: performance/results/
+          if-no-files-found: warn
+          retention-days: 30
