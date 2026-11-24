@@ -1,10 +1,16 @@
 import { randomUUID } from 'node:crypto';
 
-/** Reemplaza `{unico}` por un valor irrepetible; es el mismo en todo el texto recibido. */
-export function resolveTemplate(text: string): string {
-  if (!text.includes('{unico}')) return text;
-  const unique = `${Date.now()}${randomUUID().slice(0, 8)}`;
-  return text.replaceAll('{unico}', unique);
+export function createUniqueValue(): string {
+  return `${Date.now()}${randomUUID().slice(0, 8)}`;
+}
+
+/** Reemplaza cada marcador `{nombre}` conocido por su valor. El resto del texto no se toca. */
+export function resolveTemplate(text: string, values: Record<string, () => string>): string {
+  return Object.entries(values).reduce(
+    (resolved, [name, read]) =>
+      resolved.includes(`{${name}}`) ? resolved.replaceAll(`{${name}}`, read()) : resolved,
+    text,
+  );
 }
 
 /** Convierte "limit=5&sort=desc" en parámetros de consulta. */

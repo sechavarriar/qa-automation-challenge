@@ -82,6 +82,39 @@ Then('el id recibido es {int}', function (this: ApiWorld, expected: number) {
   assertEquals('Id', asObject(this.response.json()).id, expected);
 });
 
+Then('guardo el id recibido', function (this: ApiWorld) {
+  const { id } = asObject(this.response.json());
+  assertTrue(
+    typeof id === 'number' && Number.isInteger(id) && id > 0,
+    `Se esperaba un id entero mayor que 0, recibido ${String(id)}`,
+  );
+  this.savedId = id;
+});
+
+Then('el id recibido es el guardado', function (this: ApiWorld) {
+  assertEquals('Id', asObject(this.response.json()).id, this.requireSavedId());
+});
+
+Then(
+  'el campo {string} tiene el valor {string}',
+  function (this: ApiWorld, field: string, expected: string) {
+    assertEquals(`Campo ${field}`, asObject(this.response.json())[field], this.resolve(expected));
+  },
+);
+
+Then('guardo la cantidad de elementos de la lista', function (this: ApiWorld) {
+  this.savedCount = asNonEmptyArray(this.response.json()).length;
+});
+
+Then('la lista tiene menos elementos que la cantidad guardada', function (this: ApiWorld) {
+  assertTrue(this.savedCount !== undefined, 'No hay una cantidad guardada con la cual comparar');
+  const received = asArray(this.response.json()).length;
+  assertTrue(
+    received < this.savedCount,
+    `Cantidad de elementos: se esperaban menos de ${this.savedCount}, recibidos ${received}`,
+  );
+});
+
 Then('lo recibido coincide con lo enviado', function (this: ApiWorld) {
   assertTrue(this.sentBody !== undefined, 'No hay un body enviado con el cual comparar');
   assertContains(asObject(this.response.json()), asObject(JSON.parse(this.sentBody)));

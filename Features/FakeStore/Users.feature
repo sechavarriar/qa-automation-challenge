@@ -130,7 +130,7 @@ Feature: FakeStoreAPI - Users
     Examples: la actualización no devuelve el id
       | caso   | metodo | id | body                                                                                                                                                                                                                                                                                         | status | content_type     | contrato          | fuente    |
       | USR-15 | PUT    | 7  | {"email":"qa.{unico}@example.com","username":"qa.{unico}","password":"Clave-demo-1","name":{"firstname":"Ana","lastname":"Prueba"},"address":{"city":"Bogotá","street":"Calle 10","number":25,"zipcode":"110111","geolocation":{"lat":"4.6097","long":"-74.0817"}},"phone":"1-570-236-7033"} | 200    | application/json | user              | ENUNCIADO |
-      | USR-16 | PATCH  | 8  | {"email":"qa.{unico}@example.com"}                                                                                                                                                                                                                                                           | 200    | application/json | identified-record | ENUNCIADO |
+      | USR-16 | PATCH  | 8  | {"email":"qa.{unico}@example.com"}                                                                                                                                                                                                                                                           | 200    | application/json | identified-record | SUPUESTO  |
 
   @negativo
   Scenario Outline: [<caso>] Actualizar con <metodo> un usuario con id <descripcion> (fuente: <fuente>)
@@ -165,7 +165,7 @@ Feature: FakeStoreAPI - Users
 
     Examples:
       | caso   | id | status | content_type     | contrato | status_consulta | fuente   |
-      | USR-20 | 6  | 200    | application/json | user     | 200             | CONTRATO |
+      | USR-20 | 6  | 200    | application/json | user     | 200             | SUPUESTO |
 
   @negativo
   Scenario Outline: [<caso>] Eliminar un usuario con id <descripcion> (fuente: <fuente>)

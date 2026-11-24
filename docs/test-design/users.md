@@ -21,11 +21,11 @@ Contrato consultado: https://fakestoreapi.com/docs-data y README oficial (2026-1
 | USR-13 | POST /users | Equivalencia inválida | email sin @ | 400 | mensaje de error | ENUNCIADO | Validaciones mínimas: "email contiene @" y POST: body inválido | @negativo @regression | aprobado |
 | USR-14 | POST /users | Sintaxis | JSON mal formado | 400 | mensaje de error | ENUNCIADO | POST: body inválido | @negativo @regression | aprobado |
 | USR-15 | PUT /users/{id} | Equivalencia | id=7, body completo | 200 | JSON, `user`, id coincide, lo enviado coincide | ENUNCIADO | PUT: el campo refleja el cambio; OpenAPI: devuelve User con id | @regression | aprobado |
-| USR-16 | PATCH /users/{id} | Equivalencia | id=8, solo `email` | 200 | JSON, id coincide, lo enviado coincide | ENUNCIADO | PATCH: el campo refleja el cambio | @regression | aprobado |
+| USR-16 | PATCH /users/{id} | Equivalencia | id=8, solo `email` | 200 | JSON, id coincide, lo enviado coincide | SUPUESTO | PATCH: el campo refleja el cambio | @regression | aprobado |
 | USR-17 | PUT /users/{id} | Equivalencia inválida | id=9999 | 404 | status | HTTP | RFC 9110 §15.5.5; reglas §7 | @negativo @regression | aprobado |
 | USR-18 | PATCH /users/{id} | Equivalencia inválida | id=9999 | 404 | status | HTTP | RFC 9110 §15.5.5; reglas §7 | @negativo @regression | aprobado |
 | USR-19 | PUT /users/{id} | Equivalencia inválida | id=abc | 400 | status | CONTRATO | OpenAPI: id integer, 400 | @negativo @regression | aprobado |
-| USR-20 | DELETE + GET /users/{id} | Transición de estados | id=6 | 200 y 200 | `user`, el id coincide en ambas | CONTRATO | README: nada se borra; reglas §7 | @regression | aprobado |
+| USR-20 | DELETE + GET /users/{id} | Transición de estados | id=6 | 200 y 200 | `user`, el id coincide en ambas | SUPUESTO | README: nada se borra; reglas §7 | @regression | aprobado |
 | USR-21 | DELETE /users/{id} | Equivalencia inválida | id=9999 | 404 | status | HTTP | RFC 9110 §15.5.5; reglas §7 | @negativo @regression | aprobado |
 | USR-22 | DELETE /users/{id} | Equivalencia inválida | id=abc | 400 | status | CONTRATO | OpenAPI: id integer, 400 | @negativo @regression | aprobado |
 

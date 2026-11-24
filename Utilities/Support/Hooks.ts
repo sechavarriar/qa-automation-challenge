@@ -11,5 +11,5 @@ BeforeAll(() => {
 });
 
 After(async function (this: ApiWorld) {
-  await this.closeClients();
+  await this.cleanUp();
 });

@@ -11,7 +11,7 @@ Contrato consultado: https://fakestoreapi.com/docs-data y README oficial (2026-1
 | CRT-03 | GET /carts?limit=3 | Equivalencia | limit=3 | 200 | `cart`, 3 elementos | CONTRATO | README: /carts?limit=5 | @regression | aprobado |
 | CRT-04 | GET /carts?sort=asc | Equivalencia | sort=asc | 200 | `cart`, ids ascendentes | CONTRATO | README: /carts?sort=desc (asc\|desc) | @regression | aprobado |
 | CRT-05 | GET /carts?sort=desc | Equivalencia | sort=desc | 200 | `cart`, ids descendentes | CONTRATO | README: /carts?sort=desc (asc\|desc) | @regression | aprobado |
-| CRT-06 | GET /carts por fechas | Equivalencia | 2020-01-01 a 2020-12-31 | 200 | lista no vacía, `cart`, cada `date` en el rango | CONTRATO | README: /carts?startdate&enddate | @regression | aprobado |
+| CRT-06 | GET /carts por fechas | Equivalencia | 2020-03-01 a 2020-03-31 | 200 | lista no vacía, `cart`, cada `date` en el rango, menos elementos que sin filtro | CONTRATO | README: /carts?startdate&enddate | @regression | aprobado |
 | CRT-07 | GET /carts/user/{id} | Equivalencia | usuario 1 | 200 | lista no vacía, `cart`, cada `userId` = 1 | CONTRATO | README: /carts/user/1 | @regression | aprobado |
 | CRT-08 | GET /carts/{id} | Valor límite | id=1 | 200 | JSON, `cart`, el id coincide | ENUNCIADO | GET: el id coincide con el solicitado | @smoke @regression | aprobado |
 | CRT-09 | GET /carts/{id} | Equivalencia | id=5 | 200 | JSON, `cart`, el id coincide | ENUNCIADO | GET: el id coincide con el solicitado | @smoke @regression | aprobado |
@@ -24,11 +24,11 @@ Contrato consultado: https://fakestoreapi.com/docs-data y README oficial (2026-1
 | CRT-16 | POST /carts | Equivalencia inválida | products no es array | 400 | mensaje de error | CONTRATO | OpenAPI: products array, 400 | @negativo @regression | aprobado |
 | CRT-17 | POST /carts | Sintaxis | JSON mal formado | 400 | mensaje de error | ENUNCIADO | POST: body inválido | @negativo @regression | aprobado |
 | CRT-18 | PUT /carts/{id} | Equivalencia | id=3, body completo | 200 | JSON, `cart`, id coincide, lo enviado coincide | ENUNCIADO | PUT: el campo refleja el cambio | @regression | aprobado |
-| CRT-19 | PATCH /carts/{id} | Equivalencia | id=4, solo `products` | 200 | JSON, id coincide, lo enviado coincide | ENUNCIADO | PATCH: el campo refleja el cambio | @regression | aprobado |
+| CRT-19 | PATCH /carts/{id} | Equivalencia | id=4, solo `products` | 200 | JSON, id coincide, lo enviado coincide | SUPUESTO | PATCH: el campo refleja el cambio | @regression | aprobado |
 | CRT-20 | PUT /carts/{id} | Equivalencia inválida | id=9999 | 404 | status | HTTP | RFC 9110 §15.5.5; reglas §7 | @negativo @regression | aprobado |
 | CRT-21 | PATCH /carts/{id} | Equivalencia inválida | id=9999 | 404 | status | HTTP | RFC 9110 §15.5.5; reglas §7 | @negativo @regression | aprobado |
 | CRT-22 | PUT /carts/{id} | Equivalencia inválida | id=abc | 400 | status | CONTRATO | OpenAPI: id integer, 400 | @negativo @regression | aprobado |
-| CRT-23 | DELETE + GET /carts/{id} | Transición de estados | id=2 | 200 y 200 | `cart`, el id coincide en ambas | CONTRATO | README: nada se borra; reglas §7 | @regression | aprobado |
+| CRT-23 | DELETE + GET /carts/{id} | Transición de estados | id=2 | 200 y 200 | `cart`, el id coincide en ambas | SUPUESTO | README: nada se borra; reglas §7 | @regression | aprobado |
 | CRT-24 | DELETE /carts/{id} | Equivalencia inválida | id=9999 | 404 | status | HTTP | RFC 9110 §15.5.5; reglas §7 | @negativo @regression | aprobado |
 | CRT-25 | DELETE /carts/{id} | Equivalencia inválida | id=abc | 400 | status | CONTRATO | OpenAPI: id integer, 400 | @negativo @regression | aprobado |
 

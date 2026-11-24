@@ -1,14 +1,11 @@
 import { defineParameterType } from '@cucumber/cucumber';
 import type { UpdateMethod } from '../../PageObject/Api/CrudApi';
-import {
-  FAKE_STORE_RESOURCES,
-  type FakeStoreResource,
-} from '../../PageObject/Api/FakeStore/FakeStoreApi';
+import { RESOURCES, type ResourceName } from '../../PageObject/Api/ResourceCatalog';
 
 defineParameterType({
   name: 'recurso',
-  regexp: new RegExp(FAKE_STORE_RESOURCES.join('|')),
-  transformer: (name) => name as FakeStoreResource,
+  regexp: new RegExp(RESOURCES.join('|')),
+  transformer: (name) => name as ResourceName,
 });
 
 defineParameterType({

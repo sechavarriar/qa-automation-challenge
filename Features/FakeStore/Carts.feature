@@ -40,15 +40,19 @@ Feature: FakeStoreAPI - Carts
       | CRT-05 | sort=desc  | 200    | application/json | cart     | desc  | CONTRATO |
 
   Scenario Outline: [<caso>] Filtrar carritos entre <desde> y <hasta> (fuente: <fuente>)
+    When consulto el listado de carts
+    Then el status es <status>
+    And guardo la cantidad de elementos de la lista
     When consulto el listado de carts con los parámetros "startdate=<desde>&enddate=<hasta>"
     Then el status es <status>
     And el header "Content-Type" contiene "<content_type>"
     And el body es una lista no vacía donde cada elemento cumple el contrato "<contrato>"
     And cada elemento de la lista tiene "date" entre "<desde>" y "<hasta>"
+    And la lista tiene menos elementos que la cantidad guardada
 
     Examples:
       | caso   | desde      | hasta      | status | content_type     | contrato | fuente   |
-      | CRT-06 | 2020-01-01 | 2020-12-31 | 200    | application/json | cart     | CONTRATO |
+      | CRT-06 | 2020-03-01 | 2020-03-31 | 200    | application/json | cart     | CONTRATO |
 
   Scenario Outline: [<caso>] Listar carritos del usuario <usuario> (fuente: <fuente>)
     When consulto los carritos del usuario "<usuario>"
@@ -138,7 +142,7 @@ Feature: FakeStoreAPI - Carts
     Examples:
       | caso   | metodo | id | body                                                                                     | status | content_type     | contrato          | fuente    |
       | CRT-18 | PUT    | 3  | {"userId":3,"date":"2026-11-24T00:00:00.000Z","products":[{"productId":4,"quantity":6}]} | 200    | application/json | cart              | ENUNCIADO |
-      | CRT-19 | PATCH  | 4  | {"products":[{"productId":9,"quantity":1}]}                                              | 200    | application/json | identified-record | ENUNCIADO |
+      | CRT-19 | PATCH  | 4  | {"products":[{"productId":9,"quantity":1}]}                                              | 200    | application/json | identified-record | SUPUESTO  |
 
   @negativo
   Scenario Outline: [<caso>] Actualizar con <metodo> un carrito con id <descripcion> (fuente: <fuente>)
@@ -173,7 +177,7 @@ Feature: FakeStoreAPI - Carts
 
     Examples:
       | caso   | id | status | content_type     | contrato | status_consulta | fuente   |
-      | CRT-23 | 2  | 200    | application/json | cart     | 200             | CONTRATO |
+      | CRT-23 | 2  | 200    | application/json | cart     | 200             | SUPUESTO |
 
   @negativo
   Scenario Outline: [<caso>] Eliminar un carrito con id <descripcion> (fuente: <fuente>)

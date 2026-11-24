@@ -180,7 +180,7 @@ Feature: FakeStoreAPI - Products
 
     Examples:
       | caso   | id | status | content_type     | contrato | status_consulta | fuente   |
-      | PRD-24 | 6  | 200    | application/json | product  | 200             | CONTRATO |
+      | PRD-24 | 6  | 200    | application/json | product  | 200             | SUPUESTO |
 
   @negativo
   Scenario Outline: [<caso>] Eliminar un producto con id <descripcion> (fuente: <fuente>)

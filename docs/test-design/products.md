@@ -31,7 +31,7 @@ Products se implementó primero, sin la skill, como patrón de referencia. Esta 
 | PRD-21 | PUT /products/{id} | Equivalencia inválida | id=9999 | 404 | status | HTTP | RFC 9110 §15.5.5; reglas §7 | @negativo @regression | aprobado |
 | PRD-22 | PATCH /products/{id} | Equivalencia inválida | id=9999 | 404 | status | HTTP | RFC 9110 §15.5.5; reglas §7 | @negativo @regression | aprobado |
 | PRD-23 | PUT /products/{id} | Equivalencia inválida | id=abc | 400 | status | CONTRATO | OpenAPI: id integer, 400 | @negativo @regression | aprobado |
-| PRD-24 | DELETE + GET /products/{id} | Transición de estados | id=6 | 200 y 200 | `product`, el id coincide en ambas | CONTRATO | README: nada se borra; reglas §7 | @regression | aprobado |
+| PRD-24 | DELETE + GET /products/{id} | Transición de estados | id=6 | 200 y 200 | `product`, el id coincide en ambas | SUPUESTO | README: nada se borra; reglas §7 | @regression | aprobado |
 | PRD-25 | DELETE /products/{id} | Equivalencia inválida | id=9999 | 404 | status | HTTP | RFC 9110 §15.5.5; reglas §7 | @negativo @regression | aprobado |
 | PRD-26 | DELETE /products/{id} | Equivalencia inválida | id=abc | 400 | status | CONTRATO | OpenAPI: id integer, 400 | @negativo @regression | aprobado |
 
