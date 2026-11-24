@@ -1,7 +1,7 @@
 // Ejecuta una prueba de k6, o todas, y conserva su código de salida.
 // El token llega a k6 por variable de entorno: no aparece en la línea de comandos.
 import { spawnSync } from 'node:child_process';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, rmSync } from 'node:fs';
 import dotenv from 'dotenv';
 
 dotenv.config({ path: [`.env.${process.env.TEST_ENV?.trim() || 'qa'}`, '.env'], quiet: true });
@@ -11,7 +11,8 @@ const TESTS = {
   stress: 'stress-test-users',
   spike: 'spike-test-products',
 };
-const RESULTS = 'performance/results';
+// `performance/results` guarda la evidencia versionada; cada ejecución escribe aparte.
+const RESULTS = 'performance/output';
 
 const [type, ...extraArgs] = process.argv.slice(2);
 const selected = type === 'all' ? Object.values(TESTS) : [TESTS[type]];
@@ -20,6 +21,7 @@ if (selected.includes(undefined)) {
   process.exit(1);
 }
 
+rmSync(RESULTS, { recursive: true, force: true });
 mkdirSync(`${RESULTS}/raw`, { recursive: true });
 
 // Con "all" se ejecutan todas aunque una falle; el resultado final es el de la peor.

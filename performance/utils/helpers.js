@@ -1,12 +1,40 @@
+import http from 'k6/http';
 import exec from 'k6/execution';
 
 export const FAKESTORE_BASE_URL = __ENV.FAKESTORE_BASE_URL || 'https://fakestoreapi.com';
 export const GOREST_BASE_URL = __ENV.GOREST_BASE_URL || 'https://gorest.co.in';
+const OUTPUT_FOLDER = 'performance/output';
 
 export function requiredEnv(name) {
   const value = __ENV[name];
   if (!value) throw new Error(`Falta la variable de entorno ${name}.`);
   return value;
+}
+
+/** Corta la prueba si el destino no responde 200: cargar contra un bloqueo no mide nada. */
+export function abortIfUnreachable(url) {
+  const response = http.get(url);
+  if (response.status !== 200) {
+    exec.test.abort(
+      `La prueba no se ejecutó: ${url} respondió ${response.status} en la verificación previa. ` +
+        describeBlock(response),
+    );
+  }
+}
+
+/** Pistas para saber quién rechazó la petición: la API o un filtro delante de ella. */
+function describeBlock({ headers, body, error }) {
+  const text = (body || error || '')
+    .replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return [
+    `server=${headers['Server'] || '-'}`,
+    `cf-mitigated=${headers['Cf-Mitigated'] || '-'}`,
+    `content-type=${headers['Content-Type'] || '-'}`,
+    `respuesta=${text.slice(0, 200) || '(vacía)'}`,
+  ].join(' | ');
 }
 
 /** Nombre de la fase según el tiempo transcurrido. `phases`: [{ name, until }], en segundos. */
@@ -35,10 +63,10 @@ export function parseJson(response) {
   }
 }
 
-/** Guarda el resumen completo en `performance/results` y una versión corta en consola. */
+/** Guarda el resumen completo en `performance/output` y una versión corta en consola. */
 export function buildSummary(testName) {
   return (data) => ({
-    [`performance/results/${testName}-summary.json`]: JSON.stringify(
+    [`${OUTPUT_FOLDER}/${testName}-summary.json`]: JSON.stringify(
       { metrics: data.metrics, state: data.state },
       null,
       2,

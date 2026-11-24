@@ -15,5 +15,5 @@ reports/
 .DS_Store
 Thumbs.db
 
-# Datos crudos de k6; los resúmenes sí se versionan
-performance/results/raw/
+# Salida de cada ejecución de k6; la evidencia versionada está en performance/results
+performance/output/
