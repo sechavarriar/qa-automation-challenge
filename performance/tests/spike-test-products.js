@@ -1,7 +1,12 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { SPIKE_THINK_TIME_SECONDS, spikeThresholds } from '../config/thresholds.js';
-import { buildSummary, currentPhase, FAKESTORE_BASE_URL } from '../utils/helpers.js';
+import {
+  abortIfUnreachable,
+  buildSummary,
+  currentPhase,
+  FAKESTORE_BASE_URL,
+} from '../utils/helpers.js';
 
 const PHASES = [
   { name: 'base', until: 30 },
@@ -26,6 +31,10 @@ export const options = {
   thresholds: spikeThresholds,
   summaryTrendStats: ['avg', 'min', 'med', 'p(90)', 'p(95)', 'p(99)', 'max'],
 };
+
+export function setup() {
+  abortIfUnreachable(`${FAKESTORE_BASE_URL}/products`);
+}
 
 export default function () {
   const response = http.get(`${FAKESTORE_BASE_URL}/products`, {

@@ -51,7 +51,7 @@ jobs:
       - name: Analizar resultados por ventana de tiempo
         if: always()
         run: |
-          for raw in performance/results/raw/*.json; do
+          for raw in performance/output/raw/*.json; do
             [ -e "$raw" ] && node performance/analyze.mjs "$(basename "$raw" .json)"
           done
 
@@ -60,6 +60,6 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: performance-${{ env.TEST_TYPE }}-${{ github.run_number }}-${{ github.run_attempt }}
-          path: performance/results/
+          path: performance/output/
           if-no-files-found: warn
           retention-days: 30

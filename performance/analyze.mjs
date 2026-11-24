@@ -9,7 +9,7 @@ const BREAKING_ERROR_RATE = 0.05;
 
 const requests = [];
 const vus = [];
-const lines = createInterface({ input: createReadStream(`performance/results/raw/${name}.json`) });
+const lines = createInterface({ input: createReadStream(`performance/output/raw/${name}.json`) });
 for await (const line of lines) {
   const { type, metric, data } = JSON.parse(line);
   if (type !== 'Point') continue;
@@ -67,7 +67,7 @@ const result = {
   ventanas: rows,
 };
 
-writeFileSync(`performance/results/${name}-timeline.json`, `${JSON.stringify(result, null, 2)}\n`);
+writeFileSync(`performance/output/${name}-timeline.json`, `${JSON.stringify(result, null, 2)}\n`);
 console.table(rows.map(({ estados, ...row }) => ({ ...row, estados: JSON.stringify(estados) })));
 console.log(JSON.stringify({ ...result, ventanas: undefined }, null, 2));
 
