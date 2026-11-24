@@ -332,6 +332,239 @@ Ambiente dedicado y parecido a producción, con volumen de datos comparable. Dat
 4. **Tendencia:** resultados en Grafana por commit, para ver degradaciones lentas que no cruzan el umbral.
 5. **Alerta con contexto:** métrica, build, commits incluidos y enlace al reporte.
 
+## Parte 4: casos técnicos
+
+### Caso 1. Code review
+
+#### 1. Problemas por severidad
+
+| # | Severidad | Problema | Justificación |
+|---|---|---|---|
+| 1 | Crítica | Token fijo en el código y en `console.log` | Queda en el historial de Git y en los logs de CI; hay que revocarlo, no solo borrarlo |
+| 2 | Crítica | `res.json()` y luego `res.text()` sobre la misma respuesta | El body se lee una sola vez: el primer step lanza `TypeError` después de crear el usuario y deja un dato huérfano |
+| 3 | Alta | El `GET` de "el usuario existe" no envía `Authorization` | GoRest solo muestra el usuario a su token: responde 404 aunque exista (verificado el 24-11-2026) |
+| 4 | Alta | Los `When` no validan status ni errores | Un 401 o 422 deja `userId` en `undefined` y el fallo aparece lejos de su causa |
+| 5 | Alta | Emails fijos | La segunda ejecución recibe 422 por email repetido |
+| 6 | Alta | `let userId` a nivel de módulo | Se comparte entre escenarios y el segundo step lo sobrescribe; rompe el paralelo |
+| 7 | Media | Step copiado y pegado | Cada cambio se hace dos veces |
+| 8 | Media | URL, headers y datos dentro del step | No hay ambientes, ni datos desde el feature, ni capas |
+| 9 | Media | Espera fija de 3 s | Alarga la suite y no garantiza nada |
+| 10 | Media | "Existe" solo mira el 200 | No comprueba id, email ni contrato |
+| 11 | Baja | Sin limpieza y `userId` sin tipo | Acumula datos y oculta errores de tipos |
+
+**Por qué el token va antes que el step que siempre falla:** el step roto se nota enseguida y se arregla cambiando unas líneas. El token, en cambio, ya quedó expuesto: alguien pudo copiarlo y usarlo sin que nos demos cuenta, y borrarlo del código no sirve porque sigue en el historial de Git. Por eso primero revoco el token y después corrijo el step. Ordeno por el daño que puede causar, no por lo que se ve primero.
+
+Supuesto: el fragmento está completo. Si los imports existen en otra parte, no los cuento.
+
+#### 2. Tres comentarios de review
+
+> **Token (bloqueante).** El token está en la línea del `Authorization` y también se imprime en el `console.log`. Como ya está en el historial, ¿lo revocas y generas otro? Después lo leemos de `GOREST_TOKEN` (`.env` en local, secret en CI) y lo enmascaramos al loguear. Si quieres, te acompaño en el cambio.
+
+> **Este step falla siempre (bloqueante).** Encontré por qué: el body de la respuesta solo se puede leer una vez. Aquí se lee con `json()` y luego con `text()`, y la segunda lectura lanza un error. Si lo guardas en una variable y validas el 201 antes de usar el `id`, queda resuelto. Si quieres lo vemos juntos.
+
+> **Estado compartido (bloqueante).** `userId` es global y "creo otro usuario" lo pisa, así que en paralelo los escenarios se mezclan. ¿Lo pasamos al World? De paso, los dos steps quedan en uno solo con los datos desde `Examples`. Buena idea separar la creación de la verificación: eso lo mantendría.
+
+#### 3. Refactor de un step
+
+```gherkin
+# Feature: los datos
+Scenario Outline: Crear un usuario
+  When creo un usuario con nombre "<name>", email "<email>" y género "<gender>"
+  Then el status es 201
+
+  Examples:
+    | name   | email                   | gender |
+    | Ana QA | qa.{unico}@example.com  | female |
+```
+
+```ts
+// Step: traduce el Gherkin y guarda el estado en el World
+When('creo un usuario con nombre {string}, email {string} y género {string}',
+  async function (this: ApiWorld, name: string, email: string, gender: string) {
+    const user = { name, email: resolveTemplate(email), gender, status: 'active' };
+    this.response = await this.users.create(user);
+  });
+
+// API Object: conoce el endpoint, no hace asserts
+class UsersApi {
+  constructor(private readonly http: HttpClient) {}
+  create(user: NewUser) { return this.http.post('/public/v2/users', user); }
+}
+
+// Utilities: token, headers, timeout y log enmascarado en un solo lugar
+const http = HttpClient.create({
+  baseUrl: Environment.goRestBaseUrl,
+  headers: { Authorization: `Bearer ${Environment.goRestToken}` },
+});
+```
+
+#### 4. Qué enseñaría primero
+
+**Separación de responsabilidades, con un API Object sobre un cliente HTTP único.** Es un solo cambio que arregla varios problemas: si todas las peticiones pasan por un mismo lugar, el token se lee una vez (1), el body se lee bien (2), el header no se olvida (3), el código no se duplica (7) y la URL no se repite (8).
+
+Mover `userId` al World también hace falta, pero solo arregla el estado compartido (6). Y reglas sueltas como "no uses esperas fijas" corrigen una línea, sin explicar por qué el error se repitió en tres steps.
+
+Si no conoce el patrón, le mostraría uno de sus steps antes y después, y dejaría que haga el siguiente.
+
+### Caso 2. Triage de la nightly #142
+
+#### 1. Clasificación
+
+| Fallo | Categoría | Evidencia |
+|---|---|---|
+| F1 | Entorno / configuración | Falla en las últimas 3 y en local pasa con otro token. Pero F3 recibió 201 en la misma ejecución, y crear exige token: **el token no está caído para toda la suite**. La causa es propia de ese escenario: otra variable, o un header que se pierde |
+| F2 | Intermitencia | 3 rojos de 20 (15%) y pasa al reejecutar. El timeout es el síntoma: no hubo respuesta |
+| F3 | Defecto del producto, confianza media | Pasaba y falla desde hoy. Los dos emails solo difieren en mayúsculas y ambos dieron 201: la unicidad no los trata como iguales |
+| F4 | Limitación conocida | Falla siempre desde que se creó. La documentación de FakeStore dice que nada se borra; el 404 esperado es incorrecto |
+
+**Causa y síntoma:** el 401 de F1 y el timeout de F2 son síntomas. En F1, la causa está en lo que ese escenario tiene distinto de F3; en F2, hay que separar si falló la conexión o la respuesta.
+
+**Supuesto de F3:** el test no cambió entre #141 y #142, así que la API dejó de tratar esos correos como iguales. Antes de abrir el ticket reviso si cambió el test en Git y repito con el email idéntico; si el test cambió, es defecto del test. El 24-11-2026, GoRest devolvía 422 con el email idéntico y 201 si cambiaban las mayúsculas; su documentación no promete ignorarlas.
+
+#### 2. Primera verificación
+
+| Fallo | Qué reviso |
+|---|---|
+| F1 | En el log de #142, qué variable usa el paso de F1 y cuál F3, y la fecha del secret con `gh secret list`. El header enmascarado no prueba que el valor sea correcto. Además, hoy GoRest responde `Authentication failed` **sin header** e `Invalid token` con un token malo: buscaría un header que no llega |
+| F2 | Hora de los 3 rojos y duración de las peticiones; luego, 20 `curl` desde el runner con `-w '%{time_connect} %{time_total}'` para separar conexión de respuesta |
+| F3 | `git log -p` del generador de datos entre los commits de #141 y #142, y repetir el POST con el email **idéntico**. Si da 422, la diferencia son las mayúsculas |
+| F4 | La nota de DELETE en el README de FakeStore y un `DELETE` + `GET` a mano |
+
+#### 3. Prioridad
+
+| Orden | Fallo | Impacto | Frecuencia | Costo del fallo |
+|---|---|---|---|---|
+| 1 | F3 | Alto: cuentas duplicadas | Nuevo, desde hoy | Datos difíciles de limpiar |
+| 2 | F1 | Alto: actualización sin cobertura | 3 seguidas | 3 noches a ciegas |
+| 3 | F2 | Medio: ruido | 15% | Tiempo de reejecución y desconfianza |
+| 4 | F4 | Bajo: no hay riesgo nuevo | 100% | Solo ruido |
+
+F3 va primero porque puede ser un defecto real y su verificación toma minutos. F4 queda para el final: no se degrada por esperar.
+
+#### 4. Prevención
+
+| Fallo | Cambio |
+|---|---|
+| F1 | Paso previo en el pipeline que llama a GoRest con cada credencial y corta la ejecución con un mensaje claro si hay 401; una sola fuente de token para toda la suite |
+| F2 | Timeout por petición menor que 30 s, reintento solo de GET ante error de red, y registro del reintento para medir flakiness. Nunca reintentar un assert |
+| F3 | Dos casos separados en `Examples`: email idéntico (422) y email con otras mayúsculas (según lo que defina el negocio) |
+| F4 | Corregir el esperado con la cita de la documentación. Antes de integrar un escenario, exigir la fuente del esperado y una ejecución revisada |
+
+#### 5. Mensaje al equipo
+
+> Nightly #142: 44 de 48 en verde. 4 fallos con 4 causas distintas.
+> F3 (email duplicado): posible defecto, desde hoy. Reviso si cambió el test; si no, abro ticket hoy.
+> F1 (401): configuración de ese escenario, no el token general (F3 creó usuarios). Lo reviso después de F3.
+> F2 (timeout, 3 de 20): intermitencia; ajusto timeout y reintento de red. F4: expectativa incorrecta, la corrijo.
+> Pedido: no reejecutar hasta confirmar F3, para conservar la evidencia.
+
+### Caso 3. Decisión de release
+
+#### 1. Recomendación
+
+**Go condicionado: se libera sin pagos.** Si los 3 PRs de pagos se pueden retirar o apagar antes de las 16:00, y la regresión de pagos queda en verde sin ellos, salen los otros 11. Si no se pueden separar, o el defecto también está en la versión actual, **no se libera hoy**.
+
+Los 3 datos que más pesaron:
+
+1. **Cobro duplicado reproducible 3 de 3:** no es intermitencia y afecta dinero de clientes.
+2. **Antecedente:** un defecto similar generó 38 tickets y 1 rollback.
+3. **3 de 14 PRs tocan pagos:** hay una causa probable acotada y una salida parcial que protege el compromiso comercial.
+
+El 40% de exploratorias pendiente debe cubrir primero lo que se libere. No elijo entre el cliente y la calidad: saco lo que está probado y dejo fuera lo que cobra dos veces.
+
+#### 2. Experimento antes de las 17:00
+
+Desarrollo afirma que el usuario no reintenta así. La pregunta objetiva no es quién reintenta, sino **si el servidor cobra dos veces la misma operación**.
+
+| Hora | Prueba | Si ocurre |
+|---|---|---|
+| 14:00 | Desde la interfaz y sin el código del test: pagar, cortar la respuesta con un proxy tras el cobro y reintentar como lo haría una persona (botón, recargar, atrás) | Dos cobros: es un defecto y el test tiene razón |
+| 14:40 | Por API: dos POST con la misma orden y la misma clave de idempotencia | Dos cobros: falta idempotencia, sin importar quién reintente |
+| 15:10 | Logs de producción, 30 días: misma orden, usuario y monto en menos de 2 minutos; timeouts de pago; reintentos automáticos en app, gateway o colas | Hay casos: en producción sí se reintenta |
+| 15:40 | Lo mismo sobre la versión actual y sin los 3 PRs | Indica si el defecto es nuevo y qué PR lo introduce |
+
+La evidencia son los registros del proveedor de pagos, no la pantalla. Acoto timeout antes y después del cobro. **Regla acordada de antemano:** un solo cobro en todas las pruebas y cero casos en logs dan la razón a Desarrollo; un duplicado basta para no-go en pagos. Si a las 16:00 no hay resultado, se mantiene el no-go en pagos: la duda no puede pagarla el cliente.
+
+#### 3. Los 9 intermitentes y los 5 leves
+
+**Los 5 de severidad baja no bloquean.** Son formato de fechas y columnas en reportes: se registran, se informan a Producto y se corrigen después. Verificaría solo una cosa: que la fecha esté mal mostrada y no mal guardada.
+
+**Los 9 intermitentes sí entran, pero como incertidumbre y no como defectos.** Fallar en más del 30% de las ejecuciones significa que no informan: ni su rojo prueba un error ni su verde prueba que todo está bien. Por eso no los reejecutaría hasta verlos pasar. Los separaría por módulo:
+
+- Los que tocan pagos o lo que se libera se validan a mano hoy.
+- El resto va a cuarentena con responsable y fecha, sin contar para la decisión.
+
+Las cuentas cuadran: 2 + 5 + 9 = 16 fallos. El 94,9% en verde (296 de 312) no decide nada: 2 fallos críticos pesan más que 296 aciertos.
+
+#### 4. Si el negocio libera de todas formas
+
+1. **Técnica:** apagar el cambio de pagos con un feature flag, o exigir una clave de idempotencia por orden en el servidor; y desactivar los reintentos automáticos de cobro.
+2. **Técnica:** liberar a un 5% de usuarios durante 2 horas, con una alerta por dos cobros de la misma orden, usuario y monto.
+3. **Proceso:** riesgo aceptado por escrito por Producto, soporte avisado con un guion, reembolso preparado y una persona de guardia de Desarrollo y QA.
+
+**Rollback:** inmediato con **1 cobro duplicado confirmado**; también si los errores de pago duplican su nivel normal durante 10 minutos. El responsable de guardia lo ejecuta sin pedir aprobación y el procedimiento se ensaya antes de las 17:00. Como el rollback no devuelve el dinero, incluye revisar y reembolsar los cobros hechos desde la liberación.
+
+Supuesto: existe la posibilidad de activar flags o liberar por porcentaje. Si no existe, el riesgo sube y mantengo el no-go.
+
+### Caso 4. Estrategia y ROI
+
+#### 1. Punto de equilibrio
+
+| Concepto | Cálculo | Resultado |
+|---|---|---|
+| Horas manuales que se evitan | 60% × 32 h | 19,2 h por release |
+| Ahorro neto | 19,2 − 4 | 15,2 h por release |
+| **Equilibrio** | 160 / 15,2 = 10,5 | **11 releases** |
+| En meses | 11 × 2 semanas = 22 semanas | **5,1 meses** |
+| Primer año (26 releases) | 15,2 × 26 − 160 | +235 h |
+
+Supuestos: se cuenta desde que el 60% está listo; una hora vale lo mismo en automatizar, probar o corregir; y el 60% es de las 32 h actuales.
+
+| Escenario | Cálculo | Equilibrio |
+|---|---|---|
+| Solo ahorro de regresión | 160 / 15,2 | 11 releases (5,1 meses) |
+| Además evita 1 de los 4 defectos (8 h) | 160 / 23,2 = 6,9 | 7 releases (3,2 meses) |
+| Construcción gradual en 6 releases, desde el día 1 | 6 + (160 − 38) / 15,2 = 14,0 | 15 releases (6,9 meses) |
+
+Doy los dos plazos porque miden cosas distintas: 5 meses cuenta desde que el 60% está listo, y 7 meses, desde hoy. El segundo es el realista: automatizando un 10% adicional por release, durante la construcción solo se ahorran unas 38 h (48 − 10 de mantenimiento). **En 90 días no se recupera la inversión:** hay unos 6 releases y hacen falta 15. Prefiero decirlo ahora que prometer algo que no va a pasar.
+
+Los defectos evitados van aparte porque son una hipótesis que hay que medir: hoy cuestan 4 × 8 = 32 h por release.
+
+#### 2. Plan de 90 días
+
+Son unos 6 releases. Cada uno tiene 160 h de QA (2 personas × 80 h) y 32 se van en regresión. Construir 160 h en 6 releases son **unas 27 h por release, el 21% de las 128 restantes**.
+
+| Días | Automatizar | Manual |
+|---|---|---|
+| 1–30 | Pipeline y smoke de API de los flujos críticos; reportes | Regresión completa |
+| 31–60 | Regresión de API por riesgo y por defectos escapados | Se retira lo que lleve 2 releases estable |
+| 61–90 | Pocos flujos E2E de interfaz; completar el 60% | Exploratorias con el tiempo liberado |
+
+**Primero:** lo que se repite en cada release, es estable y cuesta dinero si falla; por API, que es más rápida y menos frágil que la interfaz.
+
+**Todavía no:** pantallas en rediseño (el mantenimiento superaría las 4 h), casos de un solo uso, reportes y aspecto visual (bajo impacto), y exploratorias (dependen del criterio de una persona).
+
+**Reparto:** un QA dedica cerca de un tercio de su tiempo a automatizar y el otro sostiene la regresión; rotan cada release para no depender de una persona. Los 8 desarrolladores revisan los tests como código y arreglan los que rompan. Si un release se complica, se pausa la automatización, no la entrega.
+
+#### 3. Métricas
+
+| Métrica | Línea base | Meta a 90 días |
+|---|---|---|
+| Esfuerzo de regresión por release | 32 h | 17 h (12,8 manuales + 4 de mantenimiento) |
+| Defectos escapados por release | ~4 (32 h de corrección) | ≤ 3, promedio de los últimos 3 releases |
+| Tasa de flakiness (fallos que pasan al repetir sin cambios) | Sin medir: se fija en el primer mes | < 2% |
+| Tiempo de feedback en PR | Sin smoke automático: hasta 2 días, lo que dura la regresión | < 10 minutos |
+
+Supuesto: hoy no hay smoke en PR, porque la cobertura automatizada es ~5%. La cobertura (5% a 60%) la mostraría como avance, no como valor.
+
+#### 4. Respuesta al líder
+
+> Hoy cada entrega nos cuesta 32 horas de repetir las mismas pruebas, y aun así unos 4 errores llegan al cliente.
+> Con 160 horas de inversión, cada entrega costaría 15 horas menos: se paga en unas 11 entregas.
+> Como lo haríamos poco a poco, sin frenar el trabajo, calculo unos 7 meses; en 90 días aún no lo veremos pagado.
+> Después ganamos cerca de 395 horas al año para buscar los errores que hoy se nos escapan.
+> Propongo empezar por lo que más dinero cuesta si falla y revisar los números contigo cada mes.
+
 ## Extra: AI Testing
 
 `.claude/` contiene dos skills y dos agentes de Claude Code que se usaron para construir esta suite y quedan para el futuro. **Los tests, el pipeline y k6 no dependen de esa carpeta ni llaman a servicios de IA.**
