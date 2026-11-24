@@ -34,6 +34,12 @@ npm run perf:load     # o perf:stress, perf:spike, perf:all
 node performance/analyze.mjs load-test-products
 ```
 
+Cada ejecución escribe en `performance/output/`, que no se versiona.
+
+**En GitHub Actions, k6 no puede medir FakeStoreAPI.** La [ejecución del 24-11-2026](https://github.com/sechavarriar/qa-automation-challenge/actions/runs/45501301260) recibió 403 en las 4445 peticiones, desde la primera, así que no depende de la carga. En la misma franja, Cucumber recibió 200 desde Actions y k6 recibe 200 en local: el bloqueo ocurre con k6 desde la red de los runners. No se altera la identidad de k6 para evitarlo. Las pruebas de FakeStoreAPI verifican primero el acceso y, si no hay 200, se detienen con error. Los resultados válidos son los locales.
+
+Esa misma ejecución muestra por qué el P95 no basta por sí solo: marcó 44 ms, «cumple», con el 100% de errores.
+
 ### Load Test: GET https://fakestoreapi.com/products
 
 | Métrica | Umbral | Resultado | ¿Cumple? |
